@@ -1,0 +1,777 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Mystery Box</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+/* Layout: two screens — a teacher's editor (single column list of rows) and a projector-friendly board of gift boxes with a full-screen reveal card. Single pastel-pink look by design. */
+:root{
+  --pink:#FFE3EA;      /* page ground */
+  --pink-2:#FFC7D5;    /* soft surfaces, borders */
+  --pink-3:#FF8FAB;    /* primary accent */
+  --rose:#E0527A;      /* strong accent, buttons */
+  --ink:#5A2F45;       /* text: plum */
+  --muted:#9C6A82;     /* secondary text */
+  --paper:#FFFFFF;
+  --cream:#FFF7EE;
+  --lav:#E6D9FF;
+  --mint:#CDF2E2;
+  --peach:#FFE0C9;
+  --lemon:#FFF1B3;
+  --good:#3DBE8B;
+  --bad:#F06A7A;
+  --shadow:0 10px 24px rgba(224,82,122,.16);
+  --f-display:"Fredoka","Baloo 2","Nunito",ui-rounded,system-ui,sans-serif;
+  --f-body:"Nunito",ui-rounded,system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;color:var(--ink);font-family:var(--f-body);font-size:16px;
+  background-color:var(--pink);
+  background-image:
+    radial-gradient(rgba(255,143,171,.22) 2.5px,transparent 3px),
+    radial-gradient(rgba(186,160,255,.18) 2px,transparent 2.5px);
+  background-size:38px 38px,38px 38px;
+  background-position:0 0,19px 19px;
+}
+button{font-family:inherit;color:inherit}
+button:focus-visible,textarea:focus-visible{outline:3px solid var(--rose);outline-offset:2px}
+
+/* ---------- shared pieces ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:.4em;
+  border:0;border-radius:999px;padding:.6em 1.1em;cursor:pointer;
+  font-family:var(--f-display);font-weight:600;font-size:1rem;
+  background:var(--paper);color:var(--ink);
+  box-shadow:0 3px 0 var(--pink-2);transition:transform .15s,box-shadow .15s,background .15s;
+}
+.btn:hover{transform:translateY(-2px);box-shadow:0 5px 0 var(--pink-2)}
+.btn:active{transform:translateY(1px);box-shadow:0 1px 0 var(--pink-2)}
+.btn.primary{background:var(--rose);color:#fff;box-shadow:0 4px 0 #B83A60}
+.btn.primary:hover{box-shadow:0 6px 0 #B83A60}
+.btn.ghost{background:transparent;box-shadow:none;color:var(--muted)}
+.btn.ghost:hover{background:rgba(255,255,255,.6)}
+.btn[aria-pressed="false"]{opacity:.55}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+
+.toast{
+  position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));
+  transform:translate(-50%,20px);opacity:0;pointer-events:none;
+  background:var(--ink);color:#fff;padding:.7em 1.2em;border-radius:999px;
+  font-weight:700;z-index:300;transition:.25s;max-width:calc(100vw - 32px);text-align:center;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+.modal-bg{position:fixed;inset:0;background:rgba(90,47,69,.35);display:grid;place-items:center;z-index:200;padding:16px}
+.modal{
+  background:var(--cream);border-radius:28px;padding:24px;width:min(560px,100%);
+  box-shadow:var(--shadow);border:4px solid var(--pink-2);display:grid;gap:14px;
+}
+.modal h3{margin:0;font-family:var(--f-display);font-size:1.5rem;color:var(--rose)}
+.modal p{margin:0;line-height:1.5;color:var(--muted)}
+.modal textarea{min-height:220px}
+.modal .actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end}
+
+/* ---------- editor ---------- */
+#editor{min-height:100%;padding:24px 16px 120px}
+.wrap{max-width:860px;margin:0 auto;display:grid;gap:18px}
+.hero{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:14px}
+.brand .logo{width:58px;height:58px;flex:none}
+.brand h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,5vw,2.8rem);line-height:1;color:var(--rose);letter-spacing:.01em}
+.brand p{margin:4px 0 0;color:var(--muted);font-weight:600}
+.hero .tools{display:flex;flex-wrap:wrap;gap:8px}
+
+.howto{
+  background:rgba(255,255,255,.7);border-radius:20px;padding:12px 16px;
+  font-size:.95rem;line-height:1.55;color:var(--muted);
+}
+.howto b{color:var(--ink)}
+.howto code{font-family:var(--f-body);background:var(--pink);padding:0 .35em;border-radius:6px;color:var(--rose);font-weight:800}
+
+#rows{display:grid;gap:12px}
+.row{
+  display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:start;
+  background:var(--paper);border-radius:22px;padding:12px;box-shadow:0 4px 0 var(--pink-2);
+}
+.row .n{
+  width:44px;height:44px;border-radius:50%;display:grid;place-items:center;
+  background:var(--pink);color:var(--rose);font-family:var(--f-display);font-weight:700;font-size:1.15rem;
+  font-variant-numeric:tabular-nums;
+}
+.row .main{display:grid;gap:8px;min-width:0}
+.seg{display:inline-flex;background:var(--pink);border-radius:999px;padding:3px;width:max-content}
+.seg button{
+  border:0;background:transparent;border-radius:999px;padding:.3em .9em;cursor:pointer;
+  font-family:var(--f-display);font-weight:600;font-size:.9rem;color:var(--muted);
+}
+.seg button[aria-pressed="true"]{background:var(--paper);color:var(--rose);box-shadow:0 2px 0 var(--pink-2)}
+textarea{
+  width:100%;resize:none;overflow:hidden;min-height:52px;
+  border:2.5px solid var(--pink-2);border-radius:16px;padding:.7em .9em;
+  font-family:var(--f-body);font-size:1rem;line-height:1.45;color:var(--ink);background:var(--cream);
+}
+textarea::placeholder{color:#C69AAE}
+.row.invalid textarea{border-color:var(--bad);background:#FFF1F2}
+.hint{font-size:.85rem;color:var(--bad);font-weight:700;display:none}
+.row.invalid .hint{display:block}
+.row .del{
+  width:40px;height:40px;border-radius:50%;border:0;background:transparent;cursor:pointer;font-size:1.1rem;
+}
+.row .del:hover{background:var(--pink)}
+.add-row{justify-self:start}
+
+.dock{
+  position:fixed;left:0;right:0;bottom:0;z-index:20;
+  padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));
+  background:rgba(255,247,238,.92);backdrop-filter:blur(8px);border-top:3px solid var(--pink-2);
+}
+.dock .inner{max-width:860px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+.stats{font-family:var(--f-display);font-weight:600;font-size:1.05rem;font-variant-numeric:tabular-nums}
+.stats .dot{color:var(--pink-3);margin:0 .35em}
+.generate{font-size:1.25rem;padding:.7em 1.6em}
+
+/* ---------- play board ---------- */
+#play{min-height:100%}
+.bar{
+  position:sticky;top:env(safe-area-inset-top,0px);z-index:30;
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+  padding:10px 16px;background:rgba(255,247,238,.9);backdrop-filter:blur(8px);border-bottom:3px solid var(--pink-2);
+}
+.bar .title{font-family:var(--f-display);font-weight:700;font-size:1.4rem;color:var(--rose);margin-right:auto}
+.bar .btn{font-size:.95rem;padding:.5em .95em}
+.counter{
+  font-family:var(--f-display);font-weight:600;background:var(--pink-3);color:#fff;
+  padding:.45em 1em;border-radius:999px;font-variant-numeric:tabular-nums;
+}
+#board{
+  display:grid;gap:18px;padding:28px 16px 60px;max-width:1400px;margin:0 auto;
+  grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
+}
+#board.peeking{grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+
+/* gift box built from CSS: lid + bow + base with a ribbon stripe */
+.gift{
+  position:relative;aspect-ratio:1;max-width:100%;border:0;background:none;padding:0;cursor:pointer;
+  --c:var(--pink-2);--r:var(--rose);
+}
+.gift .base,.gift .lid{
+  position:absolute;
+  background:linear-gradient(90deg,transparent 42%,var(--r) 42% 58%,transparent 58%),var(--c);
+}
+.gift .base{
+  left:11%;right:11%;top:40%;bottom:4%;border-radius:14px;
+  box-shadow:inset 0 -10px 0 rgba(90,47,69,.07),0 10px 18px rgba(224,82,122,.18);
+  display:grid;place-items:center;transition:opacity .3s;
+}
+.gift .lid{
+  left:5%;right:5%;top:27%;height:17%;border-radius:12px;z-index:2;
+  box-shadow:0 5px 0 rgba(90,47,69,.08);
+  transform-origin:12% 100%;transition:transform .5s cubic-bezier(.3,1.7,.5,1);
+}
+.gift .bow{position:absolute;left:50%;top:-58%;width:56%;height:80%;transform:translateX(-50%)}
+.gift .bow i{
+  position:absolute;top:10%;width:50%;height:80%;border:7px solid var(--r);border-radius:50% 50% 45% 45%;
+}
+.gift .bow i:first-child{left:2%;transform:rotate(-28deg)}
+.gift .bow i:last-child{right:2%;transform:rotate(28deg)}
+.gift .bow b{position:absolute;left:50%;bottom:0;width:22%;aspect-ratio:1;background:var(--r);border-radius:50%;transform:translate(-50%,20%)}
+.gift .num{
+  position:relative;z-index:1;min-width:2.2em;height:2.2em;padding:0 .3em;border-radius:999px;background:var(--paper);
+  display:grid;place-items:center;font-family:var(--f-display);font-weight:700;
+  font-size:clamp(1.1rem,2.4vw,1.7rem);color:var(--ink);box-shadow:0 3px 0 rgba(90,47,69,.12);
+  font-variant-numeric:tabular-nums;
+}
+.gift .peek{
+  display:none;position:relative;z-index:1;width:88%;max-height:86%;overflow:hidden;
+  background:var(--paper);border-radius:10px;padding:6px 8px;text-align:left;
+  font-family:var(--f-display);font-size:.85rem;line-height:1.25;color:var(--ink);
+  display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;
+}
+.gift .peek{display:none}
+#board.peeking .gift .peek{display:-webkit-box}
+#board.peeking .gift .num{display:none}
+.gift .check{
+  position:absolute;right:2%;top:30%;z-index:3;width:32px;height:32px;border-radius:50%;
+  background:var(--good);color:#fff;display:grid;place-items:center;font-weight:800;
+  transform:scale(0);transition:transform .35s cubic-bezier(.3,1.7,.5,1);
+}
+.gift.open .lid{transform:translate(-4%,-42%) rotate(-22deg)}
+.gift.open .base{opacity:.72}
+.gift.open .check{transform:scale(1)}
+#board.peeking .gift.open .base{opacity:1}
+.gift:hover .lid,.gift:focus-visible .lid{animation:wiggle .7s ease}
+.gift.open:hover .lid{animation:none}
+.gift.shake{animation:shake .45s ease}
+@keyframes wiggle{0%,100%{rotate:0deg}25%{rotate:-4deg}50%{rotate:4deg}75%{rotate:-2deg}}
+@keyframes shake{
+  0%,100%{transform:none}20%{transform:rotate(-8deg) scale(1.06)}40%{transform:rotate(8deg) scale(1.08)}
+  60%{transform:rotate(-6deg) scale(1.06)}80%{transform:rotate(4deg) scale(1.03)}
+}
+
+/* ---------- reveal stage ---------- */
+#stage{
+  position:fixed;inset:0;z-index:100;display:grid;place-items:center;
+  padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));
+  background:rgba(255,199,213,.72);backdrop-filter:blur(6px);cursor:pointer;
+}
+.card{
+  width:min(1200px,100%);height:min(820px,100%);background:var(--cream);
+  border:6px solid var(--pink-3);border-radius:40px;box-shadow:0 24px 60px rgba(224,82,122,.3);
+  display:flex;flex-direction:column;gap:clamp(10px,2vh,22px);padding:clamp(16px,3vw,40px);
+  position:relative;overflow:hidden;
+}
+.card::before,.card::after{
+  content:"";position:absolute;border-radius:50%;background:var(--pink);z-index:0;
+}
+.card::before{width:180px;height:180px;left:-60px;top:-60px}
+.card::after{width:240px;height:240px;right:-90px;bottom:-110px;background:var(--lav)}
+.card > *{position:relative;z-index:1}
+.card-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex:none}
+.pill{
+  font-family:var(--f-display);font-weight:600;background:var(--rose);color:#fff;
+  padding:.35em 1em;border-radius:999px;font-size:clamp(.95rem,1.8vw,1.3rem);
+}
+.pill.soft{background:var(--paper);color:var(--muted)}
+.fit{
+  flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;text-align:center;
+  font-family:var(--f-display);font-weight:600;line-height:1.18;color:var(--ink);
+  overflow:hidden;overflow-wrap:anywhere;white-space:pre-wrap;text-wrap:balance;
+}
+.card.mcq .fit{flex:0 1 auto;max-height:38%}
+.opts{
+  flex:1 1 auto;min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:clamp(8px,1.6vw,18px);
+  font-family:var(--f-display);font-weight:600;
+}
+.opt{
+  display:flex;align-items:center;gap:.5em;border-radius:24px;padding:.3em .6em;min-height:0;
+  overflow:hidden;line-height:1.15;border:4px solid transparent;transition:transform .3s,opacity .3s,border-color .3s;
+}
+.opt:nth-child(1){background:var(--pink-2)}
+.opt:nth-child(2){background:var(--lav)}
+.opt:nth-child(3){background:var(--mint)}
+.opt:nth-child(4){background:var(--peach)}
+.opt:nth-child(5){background:var(--lemon)}
+.opt:nth-child(6){background:var(--pink-2)}
+.opt .l{
+  flex:none;width:1.6em;height:1.6em;border-radius:50%;background:var(--paper);display:grid;place-items:center;color:var(--rose);
+}
+.opt .t{min-width:0;overflow-wrap:anywhere}
+.card.revealed .opt{opacity:.4;transform:scale(.97)}
+.card.revealed .opt.correct{opacity:1;transform:scale(1.03);border-color:var(--good);box-shadow:0 0 0 6px rgba(61,190,139,.25)}
+.card.revealed .opt.correct .l{background:var(--good);color:#fff}
+.card-foot{flex:none;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.tap{color:var(--muted);font-weight:700;font-size:clamp(.85rem,1.4vw,1.05rem)}
+.reveal{font-size:clamp(1rem,2vw,1.35rem)}
+
+#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:150}
+
+@media (max-width:560px){
+  .row{grid-template-columns:36px minmax(0,1fr) 36px;gap:8px;padding:10px}
+  .row .n{width:36px;height:36px;font-size:1rem}
+  .opts{grid-template-columns:1fr}
+  #board{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px}
+  #board.peeking{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+  .bar .title{width:100%}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+</style>
+
+<!-- ================= EDITOR ================= -->
+<section id="editor">
+  <div class="wrap">
+    <header class="hero">
+      <div class="brand">
+        <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
+          <rect x="8" y="26" width="48" height="32" rx="7" fill="#FFC7D5"/>
+          <rect x="4" y="18" width="56" height="12" rx="6" fill="#FF8FAB"/>
+          <rect x="28" y="18" width="8" height="40" fill="#E0527A"/>
+          <ellipse cx="23" cy="12" rx="9" ry="6" fill="none" stroke="#E0527A" stroke-width="4" transform="rotate(-25 23 12)"/>
+          <ellipse cx="41" cy="12" rx="9" ry="6" fill="none" stroke="#E0527A" stroke-width="4" transform="rotate(25 41 12)"/>
+          <circle cx="32" cy="17" r="4" fill="#E0527A"/>
+        </svg>
+        <div>
+          <h1>Mystery Box</h1>
+          <p>Type one item per row, then wrap them up as surprise gifts.</p>
+        </div>
+      </div>
+      <div class="tools">
+        <button class="btn" id="bulkBtn" type="button">📋 Bulk paste</button>
+        <button class="btn" id="sampleBtn" type="button">✨ Sample items</button>
+        <button class="btn ghost" id="clearBtn" type="button">Clear all</button>
+      </div>
+    </header>
+
+    <div class="howto">
+      <b>Statement</b>: any fact, prompt or task. &nbsp;
+      <b>MCQ</b>: question on the first line, then options <code>A.</code> <code>B.</code> <code>C.</code> <code>D.</code> on their own lines.
+      Put <code>*</code> at the end of the correct option. Empty rows are skipped. Up to 100 rows.
+    </div>
+
+    <div id="rows"></div>
+    <button class="btn add-row" id="addBtn" type="button">＋ Add row</button>
+  </div>
+
+  <div class="dock">
+    <div class="inner">
+      <div class="stats" id="stats">0 statements</div>
+      <button class="btn primary generate" id="genBtn" type="button">🎁 Generate</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PLAY BOARD ================= -->
+<section id="play" hidden>
+  <div class="bar">
+    <div class="title">Mystery Box</div>
+    <button class="btn" id="resetBtn" type="button">🔄 Reset</button>
+    <button class="btn" id="openAllBtn" type="button">📦 Open all</button>
+    <button class="btn" id="closeAllBtn" type="button">🎀 Close all</button>
+    <button class="btn" id="shuffleBtn" type="button" aria-pressed="true">🔀 Shuffle</button>
+    <button class="btn" id="soundBtn" type="button" aria-pressed="true">🔊 Sound</button>
+    <button class="btn" id="fsBtn" type="button">⛶ Full screen</button>
+    <button class="btn" id="editBtn" type="button">✏️ Edit</button>
+    <div class="counter" id="counter">Opened 0/0</div>
+  </div>
+  <div id="board"></div>
+</section>
+
+<!-- ================= REVEAL STAGE ================= -->
+<div id="stage" hidden>
+  <div class="card" id="card"></div>
+</div>
+
+<canvas id="fx" aria-hidden="true"></canvas>
+<div class="toast" id="toast" role="status"></div>
+<div id="modalRoot"></div>
+
+<script>
+/* ============================================================
+   Mystery Box — teacher's surprise-box game (single file)
+   ============================================================ */
+const MAX_ROWS = 100;
+const STORE_KEY = 'mystery-box-v1';
+const $ = s => document.querySelector(s);
+
+const SAMPLES = [
+  {type:'statement', text:'Honeybees can recognise human faces.'},
+  {type:'mcq', text:"Which word is a synonym of 'happy'?\nA. Gloomy\nB. Cheerful *\nC. Angry\nD. Tired"},
+  {type:'statement', text:'Tell your partner about the best gift you have ever received.'},
+  {type:'mcq', text:"Choose the correct sentence.\nA. She don't like coffee.\nB. She doesn't likes coffee.\nC. She doesn't like coffee. *\nD. She not like coffee."},
+  {type:'statement', text:"Fun fact: a group of flamingos is called a 'flamboyance'."},
+  {type:'mcq', text:'What is the capital of Australia?\nA. Sydney\nB. Melbourne\nC. Canberra *\nD. Perth'}
+];
+const PLACEHOLDER = {
+  statement:'e.g. The Great Wall of China is over 21,000 km long.',
+  mcq:'Which planet is known as the Red Planet?\nA. Venus\nB. Mars *\nC. Jupiter\nD. Saturn'
+};
+const BOX_COLORS = [
+  ['#FFC7D5','#E0527A'],['#E6D9FF','#9B7BE8'],['#CDF2E2','#3DBE8B'],
+  ['#FFE0C9','#F28C5B'],['#FFF1B3','#F2B53C'],['#FFD9EC','#D65DA0']
+];
+
+let uid = 0;
+const state = { rows:[], shuffle:true, sound:true };
+const play = { items:[], opened:new Set(), peeking:false, busy:false, current:-1 };
+
+/* ---------- storage (optional; never required) ---------- */
+function save(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify({rows:state.rows.map(r=>({type:r.type,text:r.text})),shuffle:state.shuffle,sound:state.sound})); }catch(e){}
+}
+function load(){
+  try{
+    const d = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
+    if(d && Array.isArray(d.rows) && d.rows.length){
+      state.rows = d.rows.slice(0,MAX_ROWS).map(r=>({id:++uid,type:r.type==='mcq'?'mcq':'statement',text:String(r.text||'')}));
+      state.shuffle = d.shuffle !== false; state.sound = d.sound !== false;
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+/* ---------- MCQ parsing ---------- */
+const OPT_RE = /^\s*([A-Fa-f])\s*[\.\)\:]\s*(.+)$/;
+function parseMCQ(text){
+  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
+  const qLines = [], opts = [];
+  for(const line of lines){
+    const m = line.match(OPT_RE);
+    if(m && (opts.length || qLines.length)){
+      let t = m[2].trim(), correct = false;
+      if(/\*\s*$/.test(t)){ correct = true; t = t.replace(/\s*\*+\s*$/,''); }
+      opts.push({letter:m[1].toUpperCase(), text:t, correct});
+    }else if(!opts.length){
+      qLines.push(line);
+    }else{
+      opts[opts.length-1].text += ' ' + line; // wrapped option text
+    }
+  }
+  const q = qLines.join('\n');
+  return { q, opts, valid: q.length>0 && opts.length>=2 };
+}
+function looksLikeMCQ(text){
+  const n = text.split('\n').filter(l=>OPT_RE.test(l)).length;
+  return n >= 2;
+}
+
+/* ---------- editor rendering ---------- */
+function renderRows(){
+  const box = $('#rows'); box.innerHTML = '';
+  state.rows.forEach((r,i)=>{
+    const el = document.createElement('div');
+    el.className = 'row'; el.dataset.id = r.id;
+    el.innerHTML = `
+      <div class="n">${i+1}</div>
+      <div class="main">
+        <div class="seg" role="group" aria-label="Item type">
+          <button type="button" data-t="statement" aria-pressed="${r.type==='statement'}">Statement</button>
+          <button type="button" data-t="mcq" aria-pressed="${r.type==='mcq'}">MCQ</button>
+        </div>
+        <textarea id="row-${r.id}" rows="2" aria-label="Row ${i+1} content"></textarea>
+        <div class="hint">MCQ format: question on line 1, then at least two options like "A. …", "B. …". Mark the answer with *.</div>
+      </div>
+      <button class="del" type="button" title="Delete row" aria-label="Delete row ${i+1}">🗑</button>`;
+    const ta = el.querySelector('textarea');
+    ta.value = r.text; ta.placeholder = PLACEHOLDER[r.type];
+    ta.addEventListener('input',()=>{ r.text = ta.value; grow(ta); validate(el,r); updateStats(); save(); });
+    el.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>{
+      r.type = b.dataset.t;
+      el.querySelectorAll('.seg button').forEach(x=>x.setAttribute('aria-pressed', x===b));
+      ta.placeholder = PLACEHOLDER[r.type]; validate(el,r); updateStats(); save();
+    }));
+    el.querySelector('.del').addEventListener('click',()=>{
+      state.rows = state.rows.filter(x=>x!==r);
+      if(!state.rows.length) state.rows.push(newRow());
+      renderRows(); updateStats(); save();
+    });
+    box.appendChild(el);
+    validate(el,r);
+  });
+  requestAnimationFrame(()=>box.querySelectorAll('textarea').forEach(grow));
+  $('#addBtn').disabled = state.rows.length >= MAX_ROWS;
+}
+function grow(ta){ ta.style.height='auto'; ta.style.height = ta.scrollHeight + 'px'; }
+function validate(el,r){
+  const bad = r.type==='mcq' && r.text.trim() && !parseMCQ(r.text).valid;
+  el.classList.toggle('invalid', !!bad);
+}
+function newRow(type='statement',text=''){ return {id:++uid,type,text}; }
+
+function filledItems(){
+  return state.rows.filter(r=>r.text.trim()).map(r=>{
+    if(r.type==='mcq'){ const p = parseMCQ(r.text); return p.valid ? {type:'mcq',...p} : {type:'statement',text:r.text.trim()}; }
+    return {type:'statement', text:r.text.trim()};
+  });
+}
+function updateStats(){
+  const items = filledItems();
+  const s = items.filter(i=>i.type==='statement').length, m = items.length - s;
+  $('#stats').innerHTML = `${s} statement${s===1?'':'s'}<span class="dot">•</span>${m} MCQ<span class="dot">•</span>${items.length} box${items.length===1?'':'es'}`;
+  $('#genBtn').disabled = items.length===0;
+}
+
+/* ---------- toast & in-page modals ---------- */
+let toastT;
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(()=>t.classList.remove('show'),2200);
+}
+function confirmBox(title,text,okLabel,onOk){
+  const root = $('#modalRoot');
+  root.innerHTML = `<div class="modal-bg"><div class="modal" role="dialog" aria-modal="true">
+    <h3>${title}</h3><p>${text}</p>
+    <div class="actions"><button class="btn ghost" data-x type="button">Cancel</button><button class="btn primary" data-ok type="button">${okLabel}</button></div>
+  </div></div>`;
+  const close = ()=>{ root.innerHTML=''; };
+  root.querySelector('[data-x]').onclick = close;
+  root.querySelector('.modal-bg').onclick = e=>{ if(e.target.classList.contains('modal-bg')) close(); };
+  root.querySelector('[data-ok]').onclick = ()=>{ close(); onOk(); };
+  root.querySelector('[data-ok]').focus();
+}
+function bulkModal(){
+  const root = $('#modalRoot');
+  root.innerHTML = `<div class="modal-bg"><div class="modal" role="dialog" aria-modal="true">
+    <h3>Bulk paste</h3>
+    <p>Paste many items at once. Leave one empty line between items. Items with A./B./C./D. options become MCQ automatically.</p>
+    <textarea id="bulkText" placeholder="The sun is a star.\n\nWhich animal is the largest?\nA. Elephant\nB. Blue whale *\nC. Giraffe\nD. Shark"></textarea>
+    <div class="actions">
+      <button class="btn ghost" data-x type="button">Cancel</button>
+      <button class="btn" data-mode="replace" type="button">Replace all rows</button>
+      <button class="btn primary" data-mode="append" type="button">Add to list</button>
+    </div></div></div>`;
+  const close = ()=>{ root.innerHTML=''; };
+  const ta = root.querySelector('#bulkText'); ta.style.overflow='auto'; ta.focus();
+  root.querySelector('[data-x]').onclick = close;
+  root.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{
+    const chunks = ta.value.replace(/\r/g,'').split(/\n\s*\n/).map(c=>c.trim()).filter(Boolean);
+    if(!chunks.length){ toast('Paste at least one item first.'); return; }
+    let base = b.dataset.mode==='replace' ? [] : state.rows.filter(r=>r.text.trim());
+    const room = MAX_ROWS - base.length;
+    const added = chunks.slice(0,room).map(c=>newRow(looksLikeMCQ(c)?'mcq':'statement',c));
+    state.rows = base.concat(added);
+    if(!state.rows.length) state.rows.push(newRow());
+    close(); renderRows(); updateStats(); save();
+    toast(chunks.length>room ? `Added ${added.length}. The limit is ${MAX_ROWS} rows.` : `Added ${added.length} item${added.length===1?'':'s'}.`);
+  });
+}
+
+/* ---------- editor controls ---------- */
+$('#addBtn').onclick = ()=>{
+  if(state.rows.length>=MAX_ROWS){ toast(`You can have up to ${MAX_ROWS} rows.`); return; }
+  state.rows.push(newRow()); renderRows(); updateStats(); save();
+  const last = document.querySelector('#rows .row:last-child textarea'); last && last.focus();
+  if(state.rows.length>=MAX_ROWS) toast(`That's row ${MAX_ROWS}, the maximum.`);
+};
+$('#bulkBtn').onclick = bulkModal;
+$('#sampleBtn').onclick = ()=>confirmBox('Load sample items?','This replaces your current rows with 3 statements and 3 MCQs.','Load samples',()=>{
+  state.rows = SAMPLES.map(s=>newRow(s.type,s.text)); renderRows(); updateStats(); save();
+});
+$('#clearBtn').onclick = ()=>confirmBox('Clear all rows?','Every row will be emptied. This cannot be undone.','Clear all',()=>{
+  state.rows = Array.from({length:5},()=>newRow()); renderRows(); updateStats(); save();
+});
+$('#genBtn').onclick = ()=>{
+  const items = filledItems();
+  if(!items.length){ toast('Type something in at least one row.'); return; }
+  const badRows = state.rows.filter(r=>r.type==='mcq' && r.text.trim() && !parseMCQ(r.text).valid).length;
+  play.items = state.shuffle ? shuffle(items) : items;
+  play.opened.clear(); play.peeking=false;
+  showScreen('play'); renderBoard();
+  if(badRows) toast(`${badRows} MCQ row${badRows===1?'':'s'} had no options, so shown as statement.`);
+};
+
+/* ---------- play board ---------- */
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function showScreen(which){
+  $('#editor').hidden = which!=='editor';
+  $('#play').hidden = which!=='play';
+  window.scrollTo(0,0);
+  if(which==='editor') requestAnimationFrame(()=>document.querySelectorAll('#rows textarea').forEach(grow));
+}
+function esc(s){ return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function renderBoard(){
+  const b = $('#board'); b.innerHTML='';
+  b.classList.toggle('peeking', play.peeking);
+  play.items.forEach((it,i)=>{
+    const [c,r] = BOX_COLORS[i % BOX_COLORS.length];
+    const g = document.createElement('button');
+    g.type='button'; g.className='gift' + (play.opened.has(i)?' open':'');
+    g.style.setProperty('--c',c); g.style.setProperty('--r',r);
+    g.setAttribute('aria-label',`Box ${i+1}`);
+    const peek = it.type==='mcq' ? it.q : it.text;
+    g.innerHTML = `<span class="lid"><span class="bow"><i></i><i></i><b></b></span></span>
+      <span class="base"><span class="num">${i+1}</span><span class="peek">${esc(peek)}</span></span>
+      <span class="check">✓</span>`;
+    g.addEventListener('click',()=>openBox(i,g));
+    b.appendChild(g);
+  });
+  updateCounter();
+}
+function updateCounter(){ $('#counter').textContent = `Opened ${play.opened.size}/${play.items.length}`; }
+
+function openBox(i,g){
+  if(play.busy) return;
+  play.busy = true;
+  g.classList.remove('shake'); void g.offsetWidth; g.classList.add('shake');
+  ting();
+  setTimeout(()=>{
+    g.classList.remove('shake'); g.classList.add('open');
+    play.opened.add(i); updateCounter();
+    const rc = g.getBoundingClientRect();
+    burst(rc.left+rc.width/2, rc.top+rc.height*0.35, 90);
+    showCard(i, rc);
+  }, 380);
+}
+
+/* ---------- reveal card ---------- */
+function showCard(i, fromRect){
+  const it = play.items[i]; play.current = i;
+  const card = $('#card'); const stage = $('#stage');
+  card.className = 'card' + (it.type==='mcq'?' mcq':'');
+  const top = `<div class="card-top"><span class="pill">Box ${i+1}</span><span class="pill soft">${it.type==='mcq'?'Multiple choice':'Surprise!'}</span></div>`;
+  if(it.type==='mcq'){
+    const hasAns = it.opts.some(o=>o.correct);
+    card.innerHTML = top + `<div class="fit" id="fitQ">${esc(it.q)}</div>
+      <div class="opts" id="opts">${it.opts.map(o=>`<div class="opt${o.correct?' correct':''}"><span class="l">${o.letter}</span><span class="t">${esc(o.text)}</span></div>`).join('')}</div>
+      <div class="card-foot"><span class="tap">Tap anywhere to go back</span>
+      ${hasAns?'<button class="btn primary reveal" id="revealBtn" type="button">✨ Show answer</button>':''}</div>`;
+    if(it.opts.length<=2) card.querySelector('#opts').style.gridTemplateColumns = '1fr 1fr';
+    const rb = card.querySelector('#revealBtn');
+    if(rb) rb.addEventListener('click',e=>{
+      e.stopPropagation();
+      if(card.classList.contains('revealed')) return;
+      card.classList.add('revealed'); rb.disabled = true; rb.textContent = '✓ Answer shown';
+      const c = card.querySelector('.opt.correct'); const r = c.getBoundingClientRect();
+      ting(true); burst(r.left+r.width/2, r.top+r.height/2, 70, true);
+    });
+  }else{
+    card.innerHTML = top + `<div class="fit" id="fitQ">${esc(it.text)}</div>
+      <div class="card-foot"><span class="tap">Tap anywhere to go back</span></div>`;
+  }
+  stage.hidden = false;
+  fitAll(it);
+  // zoom from the box position to the centre
+  const cr = card.getBoundingClientRect();
+  const dx = (fromRect.left+fromRect.width/2) - (cr.left+cr.width/2);
+  const dy = (fromRect.top+fromRect.height/2) - (cr.top+cr.height/2);
+  const s = Math.max(.08, fromRect.width/cr.width);
+  if(card.animate && !matchMedia('(prefers-reduced-motion: reduce)').matches){
+    card.animate([
+      {transform:`translate(${dx}px,${dy}px) scale(${s})`, opacity:.4},
+      {transform:'translate(0,0) scale(1.03)', opacity:1, offset:.8},
+      {transform:'none', opacity:1}
+    ],{duration:520, easing:'cubic-bezier(.2,.8,.3,1)'}).onfinish = ()=>{ play.busy=false; };
+    stage.animate([{opacity:0},{opacity:1}],{duration:250});
+  }else play.busy=false;
+}
+function fitAll(it){
+  const q = $('#fitQ');
+  const len = (it.type==='mcq'?it.q:it.text).length;
+  fit(q, it.type==='mcq' ? 90 : (len<40?170:len<120?120:96), 18, ()=>q.scrollHeight>q.clientHeight+1||q.scrollWidth>q.clientWidth+1);
+  if(it.type==='mcq'){
+    const o = $('#opts');
+    fit(o, 72, 14, ()=>[...o.children].some(c=>{const t=c.querySelector('.t');return c.scrollHeight>c.clientHeight+1||t.scrollWidth>t.clientWidth+1;}));
+  }
+}
+function fit(el,max,min,overflows){
+  // binary search the largest font size that fits the box
+  let lo=min, hi=max, best=min;
+  while(lo<=hi){
+    const mid = (lo+hi)>>1; el.style.fontSize = mid+'px';
+    if(overflows()) hi = mid-1; else { best = mid; lo = mid+1; }
+  }
+  el.style.fontSize = best+'px';
+}
+function closeCard(){
+  const stage = $('#stage'); if(stage.hidden || play.busy) return;
+  const card = $('#card');
+  const done = ()=>{ stage.hidden = true; play.current=-1; };
+  if(card.animate && !matchMedia('(prefers-reduced-motion: reduce)').matches){
+    stage.animate([{opacity:1},{opacity:0}],{duration:220});
+    card.animate([{transform:'none'},{transform:'scale(.85)'}],{duration:220}).onfinish = done;
+  }else done();
+}
+$('#stage').addEventListener('click',closeCard);
+window.addEventListener('resize',()=>{ if(!$('#stage').hidden && play.current>=0) fitAll(play.items[play.current]); resizeFx(); });
+
+/* ---------- toolbar ---------- */
+$('#resetBtn').onclick = ()=>confirmBox('Reset the game?', state.shuffle ? 'All boxes close and the content is shuffled into new boxes.' : 'All boxes close. Shuffle is off, so the order stays the same.','Reset',()=>{
+  if(state.shuffle) play.items = shuffle(play.items);
+  play.opened.clear(); play.peeking=false; renderBoard(); toast('Fresh boxes are ready!');
+});
+$('#openAllBtn').onclick = ()=>{
+  play.items.forEach((_,i)=>play.opened.add(i)); play.peeking = true; renderBoard();
+  ting(true); burst(innerWidth/2, innerHeight*0.35, 160);
+};
+$('#closeAllBtn').onclick = ()=>{ play.opened.clear(); play.peeking=false; renderBoard(); };
+$('#shuffleBtn').onclick = ()=>{
+  state.shuffle = !state.shuffle; syncToggles(); save();
+  toast(state.shuffle ? 'Shuffle on. It applies on the next Reset.' : 'Shuffle off. Boxes keep your row order.');
+};
+$('#soundBtn').onclick = ()=>{ state.sound = !state.sound; syncToggles(); save(); if(state.sound) ting(); };
+$('#fsBtn').onclick = ()=>{
+  const d = document;
+  try{
+    if(d.fullscreenElement) d.exitFullscreen();
+    else { const p = d.documentElement.requestFullscreen && d.documentElement.requestFullscreen(); p && p.catch && p.catch(()=>toast('Full screen is not available here.')); }
+  }catch(e){ toast('Full screen is not available here.'); }
+};
+$('#editBtn').onclick = ()=>showScreen('editor');
+function syncToggles(){
+  $('#shuffleBtn').setAttribute('aria-pressed', state.shuffle);
+  $('#soundBtn').setAttribute('aria-pressed', state.sound);
+  $('#soundBtn').textContent = state.sound ? '🔊 Sound' : '🔇 Muted';
+}
+
+/* ---------- keyboard ---------- */
+let numBuf='', numT;
+document.addEventListener('keydown',e=>{
+  if($('#modalRoot').children.length){ if(e.key==='Escape') $('#modalRoot').innerHTML=''; return; }
+  if(!$('#stage').hidden){
+    if(e.key==='Escape'||e.key===' '||e.key==='Enter'){ e.preventDefault(); closeCard(); }
+    return;
+  }
+  if($('#play').hidden) return;
+  if(/^[0-9]$/.test(e.key)){
+    numBuf += e.key; clearTimeout(numT);
+    numT = setTimeout(()=>{
+      const n = parseInt(numBuf,10); numBuf='';
+      const g = document.querySelectorAll('#board .gift')[n-1];
+      if(g){ g.scrollIntoView({block:'center',behavior:'smooth'}); setTimeout(()=>openBox(n-1,g),250); }
+      else toast(`There is no box ${n}.`);
+    }, 650);
+  }
+});
+
+/* ---------- sound (Web Audio) ---------- */
+let actx;
+function ting(big){
+  if(!state.sound) return;
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    const notes = big ? [784,988,1175,1568] : [1047,1568];
+    notes.forEach((f,k)=>{
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type='sine'; o.frequency.value=f;
+      const t = actx.currentTime + k*0.08;
+      g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.18,t+0.01); g.gain.exponentialRampToValueAtTime(0.001,t+0.5);
+      o.connect(g).connect(actx.destination); o.start(t); o.stop(t+0.55);
+    });
+  }catch(e){}
+}
+
+/* ---------- celebration particles (canvas) ---------- */
+const fx = $('#fx'), ctx = fx.getContext('2d');
+const COLORS = ['#FF8FAB','#E0527A','#FFC7D5','#B79CFF','#7EDDB6','#FFD36B','#FFA36B','#FFFFFF'];
+let parts = [], running = false;
+function resizeFx(){
+  const d = Math.min(window.devicePixelRatio||1, 2);
+  fx.width = innerWidth*d; fx.height = innerHeight*d; ctx.setTransform(d,0,0,d,0,0);
+}
+resizeFx();
+function burst(x,y,n,fireworks){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) n = Math.round(n/4);
+  const shapes = ['rect','rect','circle','heart','star'];
+  for(let k=0;k<n;k++){
+    const a = fireworks ? Math.random()*Math.PI*2 : -Math.PI/2 + (Math.random()-.5)*Math.PI*1.4;
+    const sp = fireworks ? 3+Math.random()*7 : 5+Math.random()*10;
+    parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,rot:Math.random()*6,vr:(Math.random()-.5)*.3,
+      size:6+Math.random()*9,color:COLORS[(Math.random()*COLORS.length)|0],shape:shapes[(Math.random()*shapes.length)|0],life:1,decay:.008+Math.random()*.01});
+  }
+  if(!running){ running=true; requestAnimationFrame(tick); }
+}
+function drawHeart(s){
+  ctx.beginPath(); ctx.moveTo(0,s*.3);
+  ctx.bezierCurveTo(0,0,-s*.5,0,-s*.5,s*.3); ctx.bezierCurveTo(-s*.5,s*.6,0,s*.8,0,s);
+  ctx.bezierCurveTo(0,s*.8,s*.5,s*.6,s*.5,s*.3); ctx.bezierCurveTo(s*.5,0,0,0,0,s*.3); ctx.fill();
+}
+function drawStar(s){
+  ctx.beginPath();
+  for(let k=0;k<10;k++){ const r = k%2? s*.22 : s*.5, a = k*Math.PI/5 - Math.PI/2; ctx.lineTo(Math.cos(a)*r, Math.sin(a)*r); }
+  ctx.closePath(); ctx.fill();
+}
+function tick(){
+  ctx.clearRect(0,0,innerWidth,innerHeight);
+  parts = parts.filter(p=>p.life>0 && p.y<innerHeight+40);
+  for(const p of parts){
+    p.vy += .22; p.vx *= .985; p.vy *= .985; p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.life -= p.decay;
+    ctx.save(); ctx.globalAlpha = Math.max(0,Math.min(1,p.life*1.5)); ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.fillStyle = p.color;
+    if(p.shape==='rect') ctx.fillRect(-p.size/2,-p.size/4,p.size,p.size/2);
+    else if(p.shape==='circle'){ ctx.beginPath(); ctx.arc(0,0,p.size/3,0,Math.PI*2); ctx.fill(); }
+    else if(p.shape==='heart'){ ctx.translate(0,-p.size/2); drawHeart(p.size*1.2); }
+    else drawStar(p.size*1.4);
+    ctx.restore();
+  }
+  if(parts.length) requestAnimationFrame(tick); else { running=false; ctx.clearRect(0,0,innerWidth,innerHeight); }
+}
+
+/* ---------- start ---------- */
+if(!load()) state.rows = SAMPLES.map(s=>newRow(s.type,s.text));
+syncToggles(); renderRows(); updateStats();
+</script>
+
+</body></html>
